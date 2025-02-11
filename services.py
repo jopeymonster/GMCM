@@ -450,12 +450,13 @@ def disapproved_products(credentials, prod_menu_choice):
                 print(f"List request failed for merchant {prop_name} (ID: {merchant_id})")
                 print(e)
                 break
+    disapproved_product_count = len(disapproved_product_data)
     disapproved_product_data_table = (
         pd.DataFrame(disapproved_product_data).sort_values("prop")
         if disapproved_product_data
         else pd.DataFrame()
     )
-    return disapproved_product_data, disapproved_product_data_table
+    return disapproved_product_data, disapproved_product_data_table, disapproved_product_count
 
 def process_lp_errors_multi(credentials):
     """Processes product entries with landing page errors 

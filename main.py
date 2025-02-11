@@ -2,6 +2,8 @@
 from __future__ import print_function
 import time
 import json
+import sys
+import argparse
 from datetime import datetime
 from typing import Tuple, Union, Optional, Dict, List, Any
 from tabulate import tabulate
@@ -12,7 +14,8 @@ import helpers
 
 
 def main_menu():
-    # init creds
+    # init
+    timestamp = helpers.generate_timestamp()
     print("\n----- Google Merchant Center Manager by JDT using Merchant API and gRPC -----\n"
           "                 ------------- TESTING -------------\n")
     print("Authorizing access and initalizing services...")
@@ -27,13 +30,19 @@ def main_menu():
               "4. Product Report - request all or specific product level issues\n"
               # "5. Products Update - TESTING LP\n"
               "ex = Exit at any time")
-        menu_choice = helpers.custom_input("\nSelect a number from above to execute the corresponding test: ").strip()
+        menu_choice = helpers.custom_input("\nSelect an option from above to execute the corresponding test: ").lower().strip()
         if menu_choice == "1":
+            print(f"Total number of accounts: {account_count}\n")
             print("Display Property Info?")
             output_opt = input("Yes or No (Y or N): ").lower().strip()
             if output_opt == "y":
                 helpers.display_table(table_data=prop_table)
-                print(f"Total number of accounts: {account_count}\n")
+            print("Save property info to a CSV file?")
+            save_opt = input("Yes or No (Y or N): ").lower().strip()
+            if save_opt == "y":
+                prop_list_filename = f"property_mca_list-{timestamp}.csv"
+                print(f"\nSaving file for review as {prop_list_filename}\n")
+                prop_table.to_csv(prop_list_filename, index=False)
             else:
                 break
         elif menu_choice == "2":
@@ -50,38 +59,29 @@ def main_menu():
 def get_account_issues(credentials, prop_dict, prop_table, account_count):
     timestamp = helpers.generate_timestamp()
     start_time = time.time()
-    
-    # Output for testing prop_list
-    """ 
-    print("\nOutputting raw prop_dict data for review: \n")
-    features.display_dict(dict_data=prop_dict)
-    prop_list_filename = f"property_mca_list-{timestamp}.csv"
-    print(f"\nSaving file for review as {prop_list_filename}\n")
-    prop_table.to_csv(prop_list_filename, index=False)
-    """    
-
-    input("Press ENTER to display property list for review: ")
-    helpers.display_table(table_data=prop_table)
-    print(f"Total number of accounts: {account_count}\n")
     print("Account information obtained... retrieving all account issues...")
     account_issues_data, account_issues_table, account_issues_count = services.get_account_errors(credentials)
+    end_time = time.time()
 
     # Output testing for account_errors
     """ 
     print("\nOutputting raw account_errors data for review: \n")
     features.display_dict(dict_data=account_issues_data)
-    account_issues_filename = f"account_errors-{timestamp}.csv"
-    print(f"\nSaving file for review as {account_issues_filename}\n")
-    account_issues_table.to_csv(account_issues_filename, index=False)
     """    
-
-    input("Press ENTER to display account issues...")
-    helpers.display_table(table_data=account_issues_table)
-    end_time = time.time()
     execution_time = f"Total execution time: {round(end_time - start_time, 2)} seconds"
-    print(f"Account issues report complete, time and date of request: {timestamp}\n"
+    print(f"Errors compiled, time and date of request: {timestamp}\n"
           f"Total number of account issues: {account_issues_count}\n"
-          f"{execution_time}")
+          f"{execution_time}\n"
+          "View account errors report?")
+    output_opt = input("Yes or No (Y or N): ").lower().strip()
+    if output_opt == "y":
+        helpers.display_table(table_data=account_issues_table)
+    print("Save property info to a CSV file?")
+    save_opt = input("Yes or No (Y or N): ").lower().strip()
+    if save_opt == "y":
+        account_issues_filename = f"account_errors-{timestamp}.csv"
+        print(f"\nSaving file for review as {account_issues_filename}\n")
+        account_issues_table.to_csv(account_issues_filename, index=False)
 
 def feeds_report(credentials):
     timestamp = helpers.generate_timestamp()
@@ -149,7 +149,6 @@ def feeds_report(credentials):
         print("Please select a valid option.")
 
 def products_report(credentials):
-    start_time = time.time()
     timestamp = helpers.generate_timestamp()
     while True:
         print("Products List Options: \n"
@@ -187,19 +186,23 @@ def products_report(credentials):
         else:
             print("Select from the numbered options only (1-9)")
         print(f"Executing {prod_menu_choice} report...")
-        disapproved_product_data, disapproved_product_data_table = services.disapproved_products(credentials, prod_menu_choice)
-        # print(disapproved_product_data)
-        # Output testing for disapproved_products
-        # print("\nOutputting raw disapproved_product data for review: \n")
-        # features.display_dict(dict_data=disapproved_product_data)
-        # input("Disapproved product report generated, press ENTER to display for review...")
-        # features.display_table(table_data=disapproved_product_data_table)
-        disapproved_product_data_filename = f"{prod_menu_choice}-{timestamp}.csv"
-        print(f"\nSaving file for review as {disapproved_product_data_filename}\n")
-        disapproved_product_data_table.to_csv(disapproved_product_data_filename, index=False)
+        start_time = time.time()
+        disapproved_product_data, disapproved_product_data_table, disapproved_product_count = services.disapproved_products(credentials, prod_menu_choice)
         end_time = time.time()
         execution_time = f"Total execution time: {round(end_time - start_time, 2)} seconds"
-        print(f"{disapproved_product_data_filename} complete...\n{execution_time}.")
+        print(f"Disapproved products compiled, time and date of request: {timestamp}\n"
+              f"Total number of disapproved products: {disapproved_product_count}\n"
+              f"{execution_time}\n"
+              "View account errors report?")
+        output_opt = input("Yes or No (Y or N): ").lower().strip()
+        if output_opt == "y":
+            helpers.display_table(table_data=disapproved_product_data_table)
+        print("Save report info to a CSV file?")
+        save_opt = input("Yes or No (Y or N): ").lower().strip()
+        if save_opt == "y":
+            disapproved_product_data_filename = f"{prod_menu_choice}-{timestamp}.csv"
+            print(f"\nSaving file for review as {disapproved_product_data_filename}\n")
+            disapproved_product_data_table.to_csv(disapproved_product_data_filename, index=False)
 
 def products_update(credentials):
     """
@@ -252,8 +255,66 @@ def products_update(credentials):
         end_time = time.time()
         execution_time = f"Total execution time: {round(end_time - start_time, 2)} seconds"
 
+def auto_exec(main_flags: argparse.Namespace):
+    timestamp = helpers.generate_timestamp()    
+    print("\n----- Google Merchant Center Manager by JDT using Merchant API and gRPC -----\n")
+    print("Authorizing access...")
+    credentials = auth.authorize()
+    print("Authorization approved, initalizing services...")
+    if main_flags.auto == "feeds":
+        print("\n------------- AUTOMODE = FEED REPORT -------------\n")
+        feeds_report(credentials)
+    elif main_flags.auto == "accountissues":
+        print("\n------------- AUTOMODE = ACCOUNT ISSUES REPORT -------------\n")
+        prop_dict, prop_table, account_count = services.get_accounts(credentials)
+        get_account_issues(credentials, prop_dict, prop_table, account_count)
+    elif main_flags.auto == "lperrors":
+        print("\n------------- AUTOMODE = PRODUCT ERRORS REPORT -------------\n")
+        prod_menu_choice = "landing_page_errors"
+        print(f"Executing {prod_menu_choice} report...")
+        start_time = time.time()
+        disapproved_product_data, disapproved_product_data_table, disapproved_product_count = services.disapproved_products(credentials, prod_menu_choice)
+        end_time = time.time()
+        execution_time = f"Total execution time: {round(end_time - start_time, 2)} seconds"
+        print(f"Disapproved products compiled, time and date of request: {timestamp}\n"
+              f"Total number of disapproved products: {disapproved_product_count}\n"
+              f"{execution_time}\n"
+              "View account errors report?")
+        output_opt = input("Yes or No (Y or N): ").lower().strip()
+        if output_opt == "y":
+            helpers.display_table(table_data=disapproved_product_data_table)
+        print("Save report info to a CSV file?")
+        save_opt = input("Yes or No (Y or N): ").lower().strip()
+        if save_opt == "y":
+            disapproved_product_data_filename = f"{prod_menu_choice}-{timestamp}.csv"
+            print(f"\nSaving file for review as {disapproved_product_data_filename}\n")
+            disapproved_product_data_table.to_csv(disapproved_product_data_filename, index=False)
+    else:
+        print(f"Invalid argument input: {main_flags}\n"
+              "Please try again, use '--help' for more info.")
+        sys.exit(1)
+
+@helpers.handle_exceptions
 def main() -> None:
-    main_menu()
+    parser = argparse.ArgumentParser(
+        prog='GMCM',
+        description='Google Merchant Center Manager',
+        epilog='Developed by Joe Thompson',
+        formatter_class=argparse.RawTextHelpFormatter
+    )
+    parser.add_argument(
+        '--auto',
+        choices=['feeds','accountissues','lperrors'],
+        help=("Automated startup options:\n"
+              "feeds = Report all failed feed fetch attempts with option to reprocess any failures\n"
+              "accountissues = Retrieve all account wide issues violating specifications or rules\n"
+              "lperrors = Generates a report of all disapproved products due to landing_page_error\n")
+    )
+    main_flags: argparse.Namespace = parser.parse_args()
+    if main_flags.auto is None:
+        main_menu()
+    else:
+        auto_exec(main_flags)
 
 if __name__ == '__main__':
     main()
