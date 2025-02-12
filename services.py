@@ -89,7 +89,7 @@ def get_account_errors(credentials):
                     "mID": merchant_id,
                     "issueID": issue.name,
                     "title": issue.title,
-                    "severity": issue.severity.name,  # Convert severity enum to string ?
+                    "severity": issue.severity.name,
                     "detail": issue.detail,
                     "doc_uri": issue.documentation_uri,
                 }
@@ -188,7 +188,9 @@ def get_feed_status(credentials, all_feed_data):
     for idx, feed in enumerate(all_feed_data):
         prop_name = feed["prop"]
         merchant_id = feed["mID"]
-        url = feed["url"]
+        feed_url = feed["url"]
+        feed_name = feed["feed_name"]
+        feed_id = feed["feed_id"]
         upload_id = f"{feed['feed_resource_id']}/fileUploads/latest"
         request = GetFileUploadRequest(name=upload_id)
         retries = 0
@@ -201,8 +203,8 @@ def get_feed_status(credentials, all_feed_data):
                         failed_feed_data = {
                             "prop": prop_name,
                             "mID": merchant_id,
-                            "feed_name": response.feed_name,
-                            "feed_id": response.feed_id,
+                            "feed_name": feed_name,
+                            "feed_id": feed_id,
                             "status": processed_status,
                             "issue_title": issue.title,
                             "issue_severity": issue.severity.name,
@@ -211,16 +213,16 @@ def get_feed_status(credentials, all_feed_data):
                             # "items_created": response.items_created,
                             # "items_updated": response.items_updated,
                             # "upload_time": response.upload_time,
-                            "feed_url": url,
+                            "feed_url": feed_url,
                         }
                         status_data = {
                             "prop": prop_name,
                             "mID": merchant_id,
-                            "feed_name": response.feed_name,
-                            "feed_id": response.feed_id,
+                            "feed_name": feed_name,
+                            "feed_id": feed_id,
                             "status": processed_status,
                             "items_total": response.items_total,
-                            "feed_url": url,
+                            "feed_url": feed_url,
                         }
                         failed_feeds.append(failed_feed_data)
                         feed_status_data.append(status_data)
@@ -229,11 +231,11 @@ def get_feed_status(credentials, all_feed_data):
                     status_data = {
                         "prop": prop_name,
                         "mID": merchant_id,
-                        "feed_name": response.feed_name,
-                        "feed_id": response.feed_id,
+                        "feed_name": feed_name,
+                        "feed_id": feed_id,
                         "status": processed_status,
                         "items_total": response.items_total,
-                        "feed_url": url,
+                        "feed_url": feed_url,
                     }
                     feed_status_data.append(status_data)
                     # print(f"Prop: {prop_name} / Feed: {feed['feed_name']} - Status: {processed_status}")
