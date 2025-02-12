@@ -63,7 +63,7 @@ def get_accounts(credentials):
     # transform to dict
     prop_dict = {account['prop']: account for account in accounts_data}
     # transform to df to create table
-    prop_table = pd.DataFrame(accounts_data).set_index('prop')
+    prop_table = pd.DataFrame(accounts_data).sort_values('prop')
     return prop_dict, prop_table, account_count
 
 def get_account_errors(credentials):
@@ -106,7 +106,10 @@ def get_account_errors(credentials):
     severity_order = {"CRITICAL": 1, "ERROR": 2, "SEVERITY_UNSPECIFIED": 3, "SUGGESTION": 4}
     account_issues_data.sort(key=lambda x: severity_order.get(x["severity"], 5))
     # transform to df table
-    account_issues_table = pd.DataFrame(account_issues_data).set_index("prop") if account_issues_data else pd.DataFrame()
+    account_issues_table = (
+        pd.DataFrame(account_issues_data).sort_values('prop') 
+        if account_issues_data 
+        else pd.DataFrame())
     return account_issues_data, account_issues_table, account_issues_count
 
 # feeds / data sources
@@ -161,7 +164,7 @@ def get_feeds_list(credentials):
         except Exception as e:
             print(f"Unexpected error for {prop_name}: {e}")
     feed_table = (
-        pd.DataFrame(all_feed_data).set_index("prop").sort_index()
+        pd.DataFrame(all_feed_data).sort_values('prop')
         if all_feed_data
         else pd.DataFrame()
     )
@@ -185,6 +188,7 @@ def get_feed_status(credentials, all_feed_data):
     for idx, feed in enumerate(all_feed_data):
         prop_name = feed["prop"]
         merchant_id = feed["mID"]
+        url = feed["url"]
         upload_id = f"{feed['feed_resource_id']}/fileUploads/latest"
         request = GetFileUploadRequest(name=upload_id)
         retries = 0
@@ -194,35 +198,42 @@ def get_feed_status(credentials, all_feed_data):
                 processed_status = response.processing_state.name
                 if processed_status == "FAILED" and response.issues:
                     for issue in response.issues:
-                        status_data = {
-                            **feed,
+                        failed_feed_data = {
+                            "prop": prop_name,
+                            "mID": merchant_id,
+                            "feed_name": response.feed_name,
+                            "feed_id": response.feed_id,
                             "status": processed_status,
                             "issue_title": issue.title,
                             "issue_severity": issue.severity.name,
-                            "issue_desc": issue.description, 
-                            "items_total": response.items_total,
+                            # "issue_desc": issue.description, 
+                            # "items_total": response.items_total,
                             # "items_created": response.items_created,
                             # "items_updated": response.items_updated,
                             # "upload_time": response.upload_time,
+                            "feed_url": url,
+                        }
+                        status_data = {
                             "prop": prop_name,
                             "mID": merchant_id,
+                            "feed_name": response.feed_name,
+                            "feed_id": response.feed_id,
+                            "status": processed_status,
+                            "items_total": response.items_total,
+                            "feed_url": url,
                         }
+                        failed_feeds.append(failed_feed_data)
                         feed_status_data.append(status_data)
-                        failed_feeds.append(status_data)
                     fail_count += 1
                 else:
                     status_data = {
-                        **feed,
-                        "status": processed_status,
-                        "issue_title": None,
-                        "issue_severity": None,
-                        "issue_desc": None,
-                        "items_total": response.items_total,
-                        # "items_created": response.items_created,
-                        # "items_updated": response.items_updated,
-                        # "upload_time": response.upload_time,
                         "prop": prop_name,
                         "mID": merchant_id,
+                        "feed_name": response.feed_name,
+                        "feed_id": response.feed_id,
+                        "status": processed_status,
+                        "items_total": response.items_total,
+                        "feed_url": url,
                     }
                     feed_status_data.append(status_data)
                     # print(f"Prop: {prop_name} / Feed: {feed['feed_name']} - Status: {processed_status}")
@@ -243,7 +254,7 @@ def get_feed_status(credentials, all_feed_data):
                 print(f"\nERROR: {prop_name} / {feed['feed_name']} - {error_message}\n")
                 break
     severity_order = {"FAILED": 1, "IN_PROGRESS": 2, "PROCESSING_STATE_UNSPECIFIED": 3, "SUCCEEDED": 4}
-    feed_status_data.sort(key=lambda x: severity_order.get(x["status"], 5))
+    feed_status_data.sort(key=lambda x: severity_order.get(x['status'], 5))
     feed_status_table = (
         pd.DataFrame(feed_status_data).sort_values("prop")
         if feed_status_data else pd.DataFrame()
