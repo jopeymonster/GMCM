@@ -193,7 +193,7 @@ def products_report(credentials):
         print(f"Disapproved products compiled, time and date of request: {timestamp}\n"
               f"Total number of disapproved products: {disapproved_product_count}\n"
               f"{execution_time}\n"
-              "View account errors report?")
+              "View products errors report?")
         output_opt = input("Yes or No (Y or N): ").lower().strip()
         if output_opt == "y":
             helpers.display_table(table_data=disapproved_product_data_table)
@@ -279,7 +279,7 @@ def auto_exec(main_flags: argparse.Namespace):
         print(f"Disapproved products compiled, time and date of request: {timestamp}\n"
               f"Total number of disapproved products: {disapproved_product_count}\n"
               f"{execution_time}\n"
-              "View account errors report?")
+              "View product errors report?")
         output_opt = input("Yes or No (Y or N): ").lower().strip()
         if output_opt == "y":
             helpers.display_table(table_data=disapproved_product_data_table)
