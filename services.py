@@ -191,7 +191,8 @@ def get_feed_status(credentials, all_feed_data):
         feed_url = feed["url"]
         feed_name = feed["feed_name"]
         feed_id = feed["feed_id"]
-        upload_id = f"{feed['feed_resource_id']}/fileUploads/latest"
+        feed_resource_id = feed['feed_resource_id']
+        upload_id = f"{feed_resource_id}/fileUploads/latest"
         request = GetFileUploadRequest(name=upload_id)
         retries = 0
         while retries <= max_retries:
@@ -202,18 +203,19 @@ def get_feed_status(credentials, all_feed_data):
                     for issue in response.issues:
                         failed_feed_data = {
                             "prop": prop_name,
-                            "mID": merchant_id,
+                            # "mID": merchant_id,
                             "feed_name": feed_name,
                             "feed_id": feed_id,
                             "status": processed_status,
-                            "issue_title": issue.title,
-                            "issue_severity": issue.severity.name,
+                            "i_title": issue.title,
+                            "i_severity": issue.severity.name,
                             # "issue_desc": issue.description, 
                             # "items_total": response.items_total,
                             # "items_created": response.items_created,
                             # "items_updated": response.items_updated,
                             # "upload_time": response.upload_time,
-                            "feed_url": feed_url,
+                            # "feed_url": feed_url,
+                            "feed_resource_id": feed_resource_id,
                         }
                         status_data = {
                             "prop": prop_name,
