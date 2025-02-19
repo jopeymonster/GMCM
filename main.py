@@ -4,11 +4,9 @@ import time
 import json
 import sys
 import argparse
-from datetime import datetime
 from typing import Tuple, Union, Optional, Dict, List, Any
 from tabulate import tabulate
 import auth
-from auth import Configure as ac
 import services
 import helpers
 
@@ -96,13 +94,15 @@ def feeds_report(credentials):
     print("\nOutputting raw feed_status_data for review: \n")
     services.display_dict(dict_data=feed_status_data)
     """
-    print(f"There were {not_fail_count} feeds without issues :) ")
+    print(f"There were {not_fail_count} feeds without issues...")
     total_time_fetch = float(round(end_time_fetch - start_time_fetch, 2))
     total_time_fetch_string = f"Time fetching feeds: {total_time_fetch} seconds"
     print(f"Feed fetching complete!\n")
     reprocess_start_time = time.time()
-    if fail_count > 0:
-        print(f"\nBUT there are {fail_count} FAILED feeds...\n")
+    if fail_count == 0:
+        print("All feeds are good! :) ")
+    elif fail_count > 0:
+        print(f"FAILED FEEDS: {fail_count} FAILED feeds...\n")
         print("Would you like to view the failed feed data?")
         view_fails = input("Enter Y to retry, N to exit: ").strip().upper()
         if view_fails == "Y":
@@ -115,7 +115,7 @@ def feeds_report(credentials):
         retry = input("Enter Y to retry, N to exit: ").strip().upper()
         if retry == "Y":
             print("\nReprocessing failed feeds...")
-            services.fetch_feed(credentials, feed_info=failed_feeds)
+            services.fetch_feed_test(credentials, feed_info=failed_feeds) # test version w/rate limiting
             print("Reprocessing complete!\n")
     reprocess_end_time = time.time()
     reprocess_total_time = round(reprocess_end_time - reprocess_start_time, 2)
@@ -129,7 +129,7 @@ def feeds_report(credentials):
           f"{total_time_fetch_string}\n"
           f"{reprocess_total_time_string}\n"
           f"{total_feed_processing_time_string}\n")
-    print("Would you like to view the results?\n"
+    print("Would you like a report for all feed information?\n"
           "Enter Y for viewing options, N to return to main menu, or ex to quit immediately")
     view_choice = input("Enter an option from above, Y or N: ").strip().upper()
     if view_choice == "Y":

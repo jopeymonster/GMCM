@@ -1,15 +1,10 @@
 # imports
 import pandas as pd
-import json
-import pydoc
-import re
 import random
 import time
-from datetime import datetime
-from tabulate import tabulate
 import helpers
 from auth import Configure as ac
-from google.api_core.exceptions import TooManyRequests
+from google.api_core.exceptions import TooManyRequests, ResourceExhausted
 from google.shopping.type import Channel
 from google.shopping.merchant_accounts_v1beta import (
     AccountsServiceClient, 
@@ -278,6 +273,38 @@ def fetch_feed(credentials, feed_info):
             response = client.fetch_data_source(request=request)
         except Exception as e:
             print(f"Error fetching status for: {prop_name} / {feed['feed_name']}: \n{e}")
+
+def fetch_feed_test(credentials, feed_info):
+    """
+    Reprocesses feeds with errors by calling `fetch_data_source`.
+    Implements rate limiting and retries on 429 errors.
+    """
+    client = DataSourcesServiceClient(credentials=credentials)
+    request_interval = 0.25  # 4 requests/sec limit (500 per minute)
+    max_retries = 5
+    base_sleep = 1.0
+    for feed in feed_info:
+        prop_name = feed["prop"]
+        retries = 0
+        while retries <= max_retries:
+            try:
+                request = FetchDataSourceRequest(name=feed["feed_resource_id"])
+                print(f"Reprocessing initiated for feed: {prop_name} / {feed['feed_name']}")
+                response = client.fetch_data_source(request=request)
+                break 
+            except (TooManyRequests, ResourceExhausted):
+                if retries == max_retries:
+                    print(f"Max retries reached for {prop_name} / Feed: {feed['feed_name']}. Skipping...")
+                    break
+                wait_time = base_sleep * (2 ** retries) * random.uniform(0.8, 1.2)
+                print(f"Rate limit reached for {prop_name} / Feed: {feed['feed_name']}, Retrying in {wait_time:.2f} seconds...")
+                time.sleep(wait_time)
+                retries += 1
+            except Exception as e:
+                error_message = str(e).split("\n")[0]
+                print(f"\nERROR: {prop_name} / {feed['feed_name']} - {error_message}\n")
+                break
+        time.sleep(request_interval)
 
 # products
 def get_product_single(credentials):
