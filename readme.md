@@ -66,8 +66,7 @@ Run the sample code: 'python you-home-directory/GMCM/main.py' (or whatever folde
 This project is licensed under the OSS License.
 
 ## Contributors
-- Your Name (@your-github-handle)
+- Joe Thompson (@jopeymonster)
+- https://github.com/jopeymonster
 
----
-Feel free to update with additional details as needed.
 
