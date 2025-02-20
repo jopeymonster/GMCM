@@ -244,7 +244,7 @@ def get_feed_status(credentials, all_feed_data):
                 if retries == max_retries:
                     print(f"Max retries reached for {prop_name} / Feed: {feed['feed_name']}. Skipping...")
                     break
-                wait_time = base_sleep * (2 ** retries) + random.uniform(0, 0.5)
+                wait_time = base_sleep * (2 ** retries) * random.uniform(0.8, 1.2)
                 print(f"Rate limit reached for {prop_name} / Feed: {feed['feed_name']}, Retrying in {wait_time:.2f} seconds...")
                 time.sleep(wait_time)
                 retries += 1
@@ -308,7 +308,8 @@ def fetch_feed_test(credentials, feed_info):
 
 # products
 def get_product_single(credentials):
-    """Gets the specified `Product` resource."""
+    """Gets the specified `Product` resource.
+    Product resource name/ID has the format `channel~contentLanguage~feedLabel~offerId`"""
     client = ProductsServiceClient(credentials=credentials)
     product_resource_id = input("Enter a product resource name: ")
     request = GetProductRequest(name=product_resource_id)
@@ -376,8 +377,8 @@ def get_product_auto(credentials, product_id):
         return None
 
 def create_product_input(product_resource_id, original_product_entry):
-    """Creates a `ProductInput` resource by copying existing attributes."""
-    # Product resource name/ID has the format `channel~contentLanguage~feedLabel~offerId`
+    """Creates a `ProductInput` resource by copying existing attributes.
+    Product resource name/ID has the format `channel~contentLanguage~feedLabel~offerId`"""
     account, channel, content_lang, feed_label, offer_id = helpers.parse_input_details(
         resource=product_resource_id
     )
