@@ -1,8 +1,5 @@
 # gitignore for python projects
 
-# temp
-readme.md
-
 # need to be updated
 *-test
 *-JDT
