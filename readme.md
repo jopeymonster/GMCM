@@ -63,7 +63,9 @@ Run the sample code: 'python you-home-directory/GMCM/main.py' (or whatever folde
     - Use the '-h' or '--help' argument instead to review this list of automated options.
 
 ## License
-This project is licensed under the OSS License.
+This project is licensed under the [MIT License](LICENSE).
+
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 ## Contributors
 - Joe Thompson (@jopeymonster)
