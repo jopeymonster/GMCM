@@ -94,17 +94,16 @@ def feeds_report(credentials):
     print("\nOutputting raw feed_status_data for review: \n")
     services.display_dict(dict_data=feed_status_data)
     """
-    print(f"There were {not_fail_count} feeds without issues...")
+    print(f"\nFeed fetching complete!")
     total_time_fetch = float(round(end_time_fetch - start_time_fetch, 2))
     total_time_fetch_string = f"Time fetching feeds: {total_time_fetch} seconds"
-    print(f"Feed fetching complete!\n")
     reprocess_start_time = time.time()
     if fail_count == 0:
         print("All feeds are good! :) ")
     elif fail_count > 0:
         print(f"FAILED FEEDS: {fail_count} FAILED feeds...\n")
         print("Would you like to view the failed feed data?")
-        view_fails = input("Enter Y to retry, N to exit: ").strip().upper()
+        view_fails = input("Enter Y to view, N to exit: ").strip().upper()
         if view_fails == "Y":
             # print(failed_feeds)
             # helpers.display_table(table_data=failed_feeds)

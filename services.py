@@ -210,7 +210,7 @@ def get_feed_status(credentials, all_feed_data):
                             # "items_updated": response.items_updated,
                             # "upload_time": response.upload_time,
                             # "feed_url": feed_url,
-                            "feed_resource_id": feed_resource_id,
+                            # "feed_resource_id": feed_resource_id,
                         }
                         status_data = {
                             "prop": prop_name,
