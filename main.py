@@ -144,6 +144,7 @@ def feeds_report(credentials):
             feed_table.to_csv(feeds_status_filename, index=False)
     elif view_choice == "N":
         print("\nReturning to main menu...")
+        main_menu()
     else:
         print("Please select a valid option.")
 
