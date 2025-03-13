@@ -210,7 +210,7 @@ def get_feed_status(credentials, all_feed_data):
                             # "items_updated": response.items_updated,
                             # "upload_time": response.upload_time,
                             # "feed_url": feed_url,
-                            # "feed_resource_id": feed_resource_id,
+                            "feed_resource_id": feed_resource_id,
                         }
                         status_data = {
                             "prop": prop_name,
@@ -261,20 +261,6 @@ def get_feed_status(credentials, all_feed_data):
     return feed_status_data, feed_status_table, failed_feeds, fail_count, not_fail_count
 
 def fetch_feed(credentials, feed_info):
-    """
-    Reprocesses feeds with errors by calling `fetch_data_source`.
-    """
-    client = DataSourcesServiceClient(credentials=credentials)
-    for feed in feed_info:
-        prop_name = feed["prop"]
-        try:
-            request = FetchDataSourceRequest(name=feed["feed_resource_id"])
-            print(f"Reprocessing initiated for feed: {prop_name} / {feed['feed_name']}")
-            response = client.fetch_data_source(request=request)
-        except Exception as e:
-            print(f"Error fetching status for: {prop_name} / {feed['feed_name']}: \n{e}")
-
-def fetch_feed_test(credentials, feed_info):
     """
     Reprocesses feeds with errors by calling `fetch_data_source`.
     Implements rate limiting and retries on 429 errors.

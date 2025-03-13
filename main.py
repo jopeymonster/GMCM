@@ -3,6 +3,7 @@ from __future__ import print_function
 import time
 import json
 import sys
+import copy
 import argparse
 from typing import Tuple, Union, Optional, Dict, List, Any
 from tabulate import tabulate
@@ -10,16 +11,28 @@ import auth
 import services
 import helpers
 
-
-def main_menu():
-    # init
-    timestamp = helpers.generate_timestamp()
+def initialize_auth():
     print("\n----- Google Merchant Center Manager by JDT using Merchant API and gRPC -----\n"
           "                 ------------- TESTING -------------\n")
     print("Authorizing access and initalizing services...")
     credentials = auth.authorize()
     print("Authorization approved, retrieving account information...")
     prop_dict, prop_table, account_count = services.get_accounts(credentials)
+    init_data = (credentials, prop_dict, prop_table, account_count)
+    return init_data
+
+def main_menu(init_data):
+    timestamp = helpers.generate_timestamp()
+    credentials, prop_dict, prop_table, account_count = init_data
+    """
+    print("\n----- Google Merchant Center Manager by JDT using Merchant API and gRPC -----\n"
+          "                 ------------- TESTING -------------\n")
+    print("Authorizing access and initalizing services...")
+    credentials = auth.authorize()
+    print("Authorization approved, retrieving account information...")
+    prop_dict, prop_table, account_count = services.get_accounts(credentials)
+    """
+
     while True:
         print("Please choose an option from the list below:\n"
               "1. Accounts Info Review - display accounts info\n"
@@ -89,6 +102,11 @@ def feeds_report(credentials):
     print("Feed data obtained, processing statuses...")
     feed_status_data, feed_status_table, failed_feeds, fail_count, not_fail_count = services.get_feed_status(credentials, all_feed_data)
     end_time_fetch = time.time()
+
+    display_failed_feeds = copy.deepcopy(failed_feeds)
+    for feed_data in display_failed_feeds:
+        feed_data.pop("feed_resource_id", None)
+
     # Output testing for feed_report
     """
     print("\nOutputting raw feed_status_data for review: \n")
@@ -108,13 +126,17 @@ def feeds_report(credentials):
             # print(failed_feeds)
             # helpers.display_table(table_data=failed_feeds)
             # display without pydoc for easy review (short list)
-            table_output = tabulate(tabular_data=failed_feeds, headers="keys", tablefmt="simple_grid", showindex=False)
+            table_output = tabulate(tabular_data=display_failed_feeds, headers="keys", tablefmt="simple_grid", showindex=False)
             print(table_output)
+        # print(failed_feeds)
+        # helpers.display_table(table_data=failed_feeds)
+        # input("Review failed feeds data, press ENTER to continue...")
+        # display without pydoc for easy review (short list)
         print("\nWould you like to fetch them for reprocessing?")
         retry = input("Enter Y to retry, N to exit: ").strip().upper()
         if retry == "Y":
             print("\nReprocessing failed feeds...")
-            services.fetch_feed_test(credentials, feed_info=failed_feeds) # test version w/rate limiting
+            services.fetch_feed(credentials, feed_info=failed_feeds) # test version w/rate limiting
             print("Reprocessing complete!\n")
     reprocess_end_time = time.time()
     reprocess_total_time = round(reprocess_end_time - reprocess_start_time, 2)
@@ -129,7 +151,7 @@ def feeds_report(credentials):
           f"{reprocess_total_time_string}\n"
           f"{total_feed_processing_time_string}\n")
     print("Would you like a report for all feed information?\n"
-          "Enter Y for viewing options, N to return to main menu, or ex to quit immediately")
+          "Enter Y for viewing options, N to quit immediately")
     view_choice = input("Enter an option from above, Y or N: ").strip().upper()
     if view_choice == "Y":
         print("\nHow would you like to view the feed report?\n"
@@ -144,7 +166,7 @@ def feeds_report(credentials):
             feed_table.to_csv(feeds_status_filename, index=False)
     elif view_choice == "N":
         print("\nReturning to main menu...")
-        main_menu()
+        main()
     else:
         print("Please select a valid option.")
 
@@ -294,7 +316,7 @@ def auto_exec(main_flags: argparse.Namespace):
               "Please try again, use '--help' for more info.")
         sys.exit(1)
 
-@helpers.handle_exceptions
+#@helpers.handle_exceptions
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog='GMCM',
@@ -312,7 +334,8 @@ def main() -> None:
     )
     main_flags: argparse.Namespace = parser.parse_args()
     if main_flags.auto is None:
-        main_menu()
+        init_data = initialize_auth()
+        main_menu(init_data)
     else:
         auto_exec(main_flags)
 
