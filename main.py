@@ -165,8 +165,7 @@ def feeds_report(credentials):
             print(f"\nSaving file for review as {feeds_status_filename}\n")
             feed_table.to_csv(feeds_status_filename, index=False)
     elif view_choice == "N":
-        print("\nReturning to main menu...")
-        main()
+        print("\nExiting...")
     else:
         print("Please select a valid option.")
 
