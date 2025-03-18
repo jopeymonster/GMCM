@@ -5,18 +5,25 @@ import time
 import helpers
 from auth import Configure as ac
 from google.api_core.exceptions import TooManyRequests, ResourceExhausted
-from google.shopping.type import Channel
+from google.type import timeofday_pb2
+from google.shopping.type import Channel, Price
 from google.shopping.merchant_accounts_v1beta import (
     AccountsServiceClient, 
     GetAccountRequest, 
     AccountIssueServiceClient, 
-    ListAccountIssuesRequest)
+    ListAccountIssuesRequest,
+    GetShippingSettingsRequest,
+    ShippingSettingsServiceClient)
 from google.shopping.merchant_datasources_v1beta import (
     DataSourcesServiceClient, 
     FileUploadsServiceClient, 
     ListDataSourcesRequest, 
     FetchDataSourceRequest, 
-    GetFileUploadRequest)
+    GetFileUploadRequest,
+    CreateDataSourceRequest,
+    DataSource,
+    FileInput,
+    PrimaryProductDataSource)
 from google.shopping.merchant_products_v1beta import (
     ProductsServiceClient,
     ListProductsRequest,
@@ -141,6 +148,12 @@ def get_feeds_list(credentials):
                     "undefined",
                 )
                 url = getattr(data_source.file_input.fetch_settings, "fetch_uri", None)
+                countries = getattr(data_source.primary_product_data_source, "countries", None)
+                language = getattr(data_source.primary_product_data_source, "content_language", None)
+                feed_label = getattr(data_source.primary_product_data_source, "feed_label", None)
+                fetch_time = getattr(data_source.file_input.fetch_settings, "time_of_day", None)
+                fetch_timezone = getattr(data_source.file_input.fetch_settings, "time_zone", None)
+                fetch_frequency = getattr(data_source.file_input.fetch_settings, "frequency", None)
                 if feed_type == "undefined" and url:
                     feed_type = "review"
                 prop_feed_data = {
@@ -149,7 +162,13 @@ def get_feeds_list(credentials):
                     "feed_name": data_source.display_name,
                     "feed_id": data_source.data_source_id,
                     "feed_type": feed_type,
+                    "countries": countries,
+                    "language": language,
+                    "feed_label": feed_label,
                     "url": url,
+                    "fetch_time": fetch_time,
+                    "fetch_timezone": fetch_timezone,
+                    "fetch_frequency": fetch_frequency,
                     "feed_resource_id": data_source.name
                 }
                 all_feed_data.append(prop_feed_data)
@@ -533,3 +552,85 @@ def process_lp_errors_multi(credentials):
         else pd.DataFrame()
     )
     return all_lp_errors_data, all_lp_errors_table
+
+# testing with TWEU, FR Tennis Shoes
+def create_feed(credentials):
+    feed_account_id = "accounts/8813260"
+    client = DataSourcesServiceClient(credentials=credentials)
+    # Creates fetch settings for our file input
+    fetch_settings = FileInput.FetchSettings()
+    fetch_settings.enabled = True
+    # Note that the system only respects hours for the fetch schedule.
+    fetch_settings.time_of_day = timeofday_pb2.TimeOfDay(hours=22)
+    fetch_settings.time_zone = "Europe/Luxembourg"
+    fetch_settings.frequency = FileInput.FetchSettings.Frequency.FREQUENCY_DAILY
+    fetch_settings.fetch_uri = "https://www.tenniswarehouse-europe.com/bulk/new_google_footwear.html?lang=fr&vat=fr"
+    file_input = FileInput()
+    file_input.fetch_settings = fetch_settings
+    primary_datasource = PrimaryProductDataSource()
+    primary_datasource.countries = ["FR"]
+    primary_datasource.content_language = "fr"
+    primary_datasource.feed_label = "FR"
+    primary_datasource.channel = PrimaryProductDataSource.Channel.ONLINE_PRODUCTS
+    data_source = DataSource()
+    data_source.display_name = "FRANCE Tennis Shoes"
+    data_source.primary_product_data_source = primary_datasource
+    data_source.file_input = file_input
+
+    # debug testing for data source creation
+    print(f"Creating datasource for account: {feed_account_id}\n"
+          f"Feed Name: {data_source.display_name}\n"
+          f"Feed URI: {fetch_settings.fetch_uri}\n"
+          f"Feed Frequency: {fetch_settings.frequency}\n"
+          f"Feed Time of Day: {fetch_settings.time_of_day}\n"
+          f"Feed Time Zone: {fetch_settings.time_zone}\n"
+          f"Feed Channel: {primary_datasource.channel}\n"
+          f"Feed Content Language: {primary_datasource.content_language}\n"
+          f"Feed Countries: {primary_datasource.countries}\n"
+          f"Feed Label: {primary_datasource.feed_label}\n")
+    input("Press Enter to continue...")
+
+    request = CreateDataSourceRequest(parent=feed_account_id, data_source=data_source)
+    try:
+        response = client.create_data_source(request=request)
+        print(f"Datasource successfully created: {response}")
+    except RuntimeError as e:
+        print(f"Error creating datasource:\n{e}\n")
+
+def get_shipping_info(credentials, merchant_id):
+    # merchant_id = '547710616'  #TotalPadel-EN test
+    """Retrieves the shipping settings for a specific merchant account."""
+    client = ShippingSettingsServiceClient(credentials=credentials)
+    parent = f"accounts/{merchant_id}/shippingSettings"
+    request = GetShippingSettingsRequest(name=parent)
+    try:
+        response = client.get_shipping_settings(request=request)
+        return response
+    except RuntimeError as e:
+        print(f"Failed to fetch shipping settings for {merchant_id}: {e}")
+
+def get_shipping_info_all(credentials):
+    """Retrieves the shipping settings for all accounts in the merchant-info file."""
+    client = ShippingSettingsServiceClient(credentials=credentials)
+    merchant_ids = ac.read_merchant_ids()
+    shipping_settings_data = []
+    for merchant in merchant_ids:
+        prop_name = merchant.get("propName")
+        merchant_id = merchant.get("merchantId")
+        if not merchant_id:
+            print(f"Merchant ID missing for {prop_name}! Skipping...")
+            continue
+        parent = f"accounts/{merchant_id}/shippingSettings"
+        request = GetShippingSettingsRequest(name=parent)
+        try:
+            response = client.get_shipping_settings(request=request)
+            shipping_settings = {
+                "prop": prop_name,
+                "merchantID": merchant_id,
+                "shipping_settings": response
+            }
+            shipping_settings_data.append(shipping_settings)
+        except RuntimeError as e:
+            print(f"Failed to fetch shipping settings for {prop_name}: {e}")
+    return shipping_settings_data
+

@@ -11,12 +11,22 @@ import auth
 import services
 import helpers
 
+# function map for testing
+testing_map = {
+    "create_datasource": services.create_feed,
+    "product_updates": services.get_product_auto,
+    "get_shipping_info": services.get_shipping_info,
+}
+
 def initialize_auth():
     print("\n----- Google Merchant Center Manager by JDT using Merchant API and gRPC -----\n"
           "                 ------------- TESTING -------------\n")
     print("Authorizing access and initalizing services...")
     credentials = auth.authorize()
     print("Authorization approved, retrieving account information...")
+    return credentials
+
+def get_all_property_info(credentials):
     prop_dict, prop_table, account_count = services.get_accounts(credentials)
     init_data = (credentials, prop_dict, prop_table, account_count)
     return init_data
@@ -39,7 +49,6 @@ def main_menu(init_data):
               "2. Account Issues Audit - retrieve any account wide problems\n"
               "3. Feeds Report - fetch datasources for feeds review\n"
               "4. Product Report - request all or specific product level issues\n"
-              # "5. Products Update - TESTING LP\n"
               "ex = Exit at any time")
         menu_choice = helpers.custom_input("\nSelect an option from above to execute the corresponding test: ").lower().strip()
         if menu_choice == "1":
@@ -62,10 +71,13 @@ def main_menu(init_data):
             feeds_report(credentials)
         elif menu_choice == "4":
             products_report(credentials)
-        elif menu_choice =="5":
-            products_update(credentials)
         else:
             print("Please select a valid option.")
+
+""" main options for creating datasources and shipping groups
+def create_datasource(credentials):
+    services.create_feed(credentials)  
+"""
 
 def get_account_issues(credentials, prop_dict, prop_table, account_count):
     timestamp = helpers.generate_timestamp()
@@ -102,7 +114,6 @@ def feeds_report(credentials):
     print("Feed data obtained, processing statuses...")
     feed_status_data, feed_status_table, failed_feeds, fail_count, not_fail_count = services.get_feed_status(credentials, all_feed_data)
     end_time_fetch = time.time()
-
     display_failed_feeds = copy.deepcopy(failed_feeds)
     for feed_data in display_failed_feeds:
         feed_data.pop("feed_resource_id", None)
@@ -136,7 +147,7 @@ def feeds_report(credentials):
         retry = input("Enter Y to retry, N to exit: ").strip().upper()
         if retry == "Y":
             print("\nReprocessing failed feeds...")
-            services.fetch_feed(credentials, feed_info=failed_feeds) # test version w/rate limiting
+            services.fetch_feed(credentials, feed_info=failed_feeds)
             print("Reprocessing complete!\n")
     reprocess_end_time = time.time()
     reprocess_total_time = round(reprocess_end_time - reprocess_start_time, 2)
@@ -278,10 +289,7 @@ def products_update(credentials):
 
 def auto_exec(main_flags: argparse.Namespace):
     timestamp = helpers.generate_timestamp()    
-    print("\n----- Google Merchant Center Manager by JDT using Merchant API and gRPC -----\n")
-    print("Authorizing access...")
-    credentials = auth.authorize()
-    print("Authorization approved, initalizing services...")
+    credentials = initialize_auth()
     if main_flags.auto == "feeds":
         print("\n------------- AUTOMODE = FEED REPORT -------------\n")
         feeds_report(credentials)
@@ -331,9 +339,24 @@ def main() -> None:
               "accountissues = Retrieve all account wide issues violating specifications or rules\n"
               "lperrors = Generates a report of all disapproved products due to landing_page_error\n")
     )
+    parser.add_argument(
+        '--func',
+        choices=testing_map.keys(),
+        help="Test function for debugging purposes using function name"
+    )
     main_flags: argparse.Namespace = parser.parse_args()
+    if main_flags.func:
+        if main_flags.func in testing_map:
+            credentials = initialize_auth()
+            result = testing_map[main_flags.func](credentials=credentials)
+            print(f"Testing function {main_flags.func}\n"
+                f"Result: {result}\n")
+        else:
+            print(f"Error: Function {main_flags.func} not found!\n")
+        return
     if main_flags.auto is None:
-        init_data = initialize_auth()
+        credentials = initialize_auth()
+        init_data = get_all_property_info(credentials=credentials)
         main_menu(init_data)
     else:
         auto_exec(main_flags)

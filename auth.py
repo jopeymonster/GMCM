@@ -22,7 +22,6 @@ import sys
 import os
 import json
 from typing import Tuple, Union, Optional, Dict, List, Any
-from tabulate import tabulate
 import google.auth
 import google.oauth2
 from google.oauth2 import service_account
