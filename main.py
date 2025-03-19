@@ -74,10 +74,47 @@ def main_menu(init_data):
         else:
             print("Please select a valid option.")
 
-""" main options for creating datasources and shipping groups
 def create_datasource(credentials):
-    services.create_feed(credentials)  
-"""
+    while True:
+        print("Create data source using a file or input parameters?\n"
+            "1. File upload\n"
+            "2. Input parameters\n")
+        source_choice = input("Select 1 or 2: ").strip()
+        if source_choice == "1":
+            print("File upload selected, the file must be in CSV format and contain the following headers:")
+            print(helpers.create_feed_info_message)
+            print("All other information will be set to default values and can be changed later.\n"
+                  "Please enter the file path to upload: ")
+            file_path = input("Enter the file path: ").strip()
+            if not file_path:
+                print("No file path entered, exiting...")
+                break
+            else:
+                print("File path entered: ", file_path)
+                print("File upload complete, processing file...")
+                create_feed_file_data = helpers.process_file(file_path)
+                if create_feed_file_data:
+                    print("File processed, review the data below: \n")
+                    print(json.dumps(create_feed_file_data, indent=2))
+                    input("Press ENTER to continue...")
+                    services.create_feed(credentials, create_feed_file_data)
+                else:
+                    print("Error processing file, please try again.")
+        elif source_choice == "2":
+            print("Input parameters selected, please enter the following information:")
+            print(helpers.create_feed_info_message)
+            account_id = input("Enter the account ID: ").strip()
+            feed_name = input("Enter the feed name: ").strip()
+            fetch_uri = input("Enter the fetch URI: ").strip()
+            content_lang = input("Enter the content language: ").strip()
+            countries = input("Enter the countries: ").strip()
+            feed_label = input("Enter the feed label: ").strip()
+            print("Parameters entered, processing data...")
+            create_feed_data = (account_id,feed_name,fetch_uri,content_lang,countries,feed_label)
+            print("Feed data processed, review the data below: \n")
+            print(json.dumps(create_feed_data, indent=2))
+            input("Press ENTER to continue...")
+            services.create_feed(credentials, create_feed_file_data)
 
 def get_account_issues(credentials, prop_dict, prop_table, account_count):
     timestamp = helpers.generate_timestamp()
