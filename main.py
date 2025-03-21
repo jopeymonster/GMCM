@@ -31,49 +31,6 @@ def get_all_property_info(credentials):
     init_data = (credentials, prop_dict, prop_table, account_count)
     return init_data
 
-def main_menu(init_data):
-    timestamp = helpers.generate_timestamp()
-    credentials, prop_dict, prop_table, account_count = init_data
-    """
-    print("\n----- Google Merchant Center Manager by JDT using Merchant API and gRPC -----\n"
-          "                 ------------- TESTING -------------\n")
-    print("Authorizing access and initalizing services...")
-    credentials = auth.authorize()
-    print("Authorization approved, retrieving account information...")
-    prop_dict, prop_table, account_count = services.get_accounts(credentials)
-    """
-
-    while True:
-        print("Please choose an option from the list below:\n"
-              "1. Accounts Info Review - display accounts info\n"
-              "2. Account Issues Audit - retrieve any account wide problems\n"
-              "3. Feeds Report - fetch datasources for feeds review\n"
-              "4. Product Report - request all or specific product level issues\n"
-              "ex = Exit at any time")
-        menu_choice = helpers.custom_input("\nSelect an option from above to execute the corresponding test: ").lower().strip()
-        if menu_choice == "1":
-            print(f"Total number of accounts: {account_count}\n")
-            print("Display Property Info?")
-            output_opt = input("Yes or No (Y or N): ").lower().strip()
-            if output_opt == "y":
-                helpers.display_table(table_data=prop_table)
-            print("Save property info to a CSV file?")
-            save_opt = input("Yes or No (Y or N): ").lower().strip()
-            if save_opt == "y":
-                prop_list_filename = f"property_mca_list-{timestamp}.csv"
-                print(f"\nSaving file for review as {prop_list_filename}\n")
-                prop_table.to_csv(prop_list_filename, index=False)
-            else:
-                break
-        elif menu_choice == "2":
-            get_account_issues(credentials, prop_dict, prop_table, account_count)
-        elif menu_choice == "3":
-            feeds_report(credentials)
-        elif menu_choice == "4":
-            products_report(credentials)
-        else:
-            print("Please select a valid option.")
-
 def create_datasource(credentials):
     while True:
         print("Create data source using a file or input parameters?\n"
@@ -88,18 +45,16 @@ def create_datasource(credentials):
             file_path = input("Enter the file path: ").strip()
             if not file_path:
                 print("No file path entered, exiting...")
-                break
             else:
-                print("File path entered: ", file_path)
-                print("File upload complete, processing file...")
+                print("Processing file...")
                 create_feed_file_data = helpers.process_file(file_path)
                 if create_feed_file_data:
-                    print("File processed, review the data below: \n")
+                    print("File processed, review the data below:")
                     print(json.dumps(create_feed_file_data, indent=2))
                     input("Press ENTER to continue...")
                     services.create_feed(credentials, create_feed_file_data)
                 else:
-                    print("Error processing file, please try again.")
+                    print("Error processing file. Please check the format and try again.")
         elif source_choice == "2":
             print("Input parameters selected, please enter the following information:")
             print(helpers.create_feed_info_message)
@@ -359,6 +314,49 @@ def auto_exec(main_flags: argparse.Namespace):
         print(f"Invalid argument input: {main_flags}\n"
               "Please try again, use '--help' for more info.")
         sys.exit(1)
+
+def main_menu(init_data):
+    timestamp = helpers.generate_timestamp()
+    credentials, prop_dict, prop_table, account_count = init_data
+    """
+    print("\n----- Google Merchant Center Manager by JDT using Merchant API and gRPC -----\n"
+          "                 ------------- TESTING -------------\n")
+    print("Authorizing access and initalizing services...")
+    credentials = auth.authorize()
+    print("Authorization approved, retrieving account information...")
+    prop_dict, prop_table, account_count = services.get_accounts(credentials)
+    """
+
+    while True:
+        print("Please choose an option from the list below:\n"
+              "1. Accounts Info Review - display accounts info\n"
+              "2. Account Issues Audit - retrieve any account wide problems\n"
+              "3. Feeds Report - fetch datasources for feeds review\n"
+              "4. Product Report - request all or specific product level issues\n"
+              "ex = Exit at any time")
+        menu_choice = helpers.custom_input("\nSelect an option from above to execute the corresponding test: ").lower().strip()
+        if menu_choice == "1":
+            print(f"Total number of accounts: {account_count}\n")
+            print("Display Property Info?")
+            output_opt = input("Yes or No (Y or N): ").lower().strip()
+            if output_opt == "y":
+                helpers.display_table(table_data=prop_table)
+            print("Save property info to a CSV file?")
+            save_opt = input("Yes or No (Y or N): ").lower().strip()
+            if save_opt == "y":
+                prop_list_filename = f"property_mca_list-{timestamp}.csv"
+                print(f"\nSaving file for review as {prop_list_filename}\n")
+                prop_table.to_csv(prop_list_filename, index=False)
+            else:
+                break
+        elif menu_choice == "2":
+            get_account_issues(credentials, prop_dict, prop_table, account_count)
+        elif menu_choice == "3":
+            feeds_report(credentials)
+        elif menu_choice == "4":
+            products_report(credentials)
+        else:
+            print("Please select a valid option.")
 
 #@helpers.handle_exceptions
 def main() -> None:
